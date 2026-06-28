@@ -78,6 +78,10 @@ static void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon);
 static u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, u16 move);
 static u8 GetLevelFromMonExp(struct Pokemon *mon);
 static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon);
+static u32 LatiosIVs;
+static u32 CustomFixedIV;
+static u32 ivValue1;
+static u32 ivValue2;
 
 #include "data/battle_moves.h"
 
@@ -1752,6 +1756,124 @@ void ZeroEnemyPartyMons(void)
         ZeroMonData(&gEnemyParty[i]);
 }
 
+bool8 IsPokedexComplete(void)
+{
+    u16 i;
+
+    for (i = 1; i < NATIONAL_DEX_COUNT + 1; i++)
+    {
+        // Skip mythicals / legendaries
+        if (i == NATIONAL_DEX_MEW
+		 || i == NATIONAL_DEX_CELEBI
+         || i == NATIONAL_DEX_JIRACHI
+         || i == NATIONAL_DEX_DEOXYS
+         || i == NATIONAL_DEX_HO_OH
+         || i == NATIONAL_DEX_LUGIA
+
+         )
+            continue;
+
+        if (!GetSetPokedexFlag(i, FLAG_GET_CAUGHT))
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static u32 GetTrainerShinyValue(void)
+{
+	u32 tid;
+	
+	tid =
+    gSaveBlock2Ptr->playerTrainerId[0]
+  | (gSaveBlock2Ptr->playerTrainerId[1] << 8)
+  | (gSaveBlock2Ptr->playerTrainerId[2] << 16)
+  | (gSaveBlock2Ptr->playerTrainerId[3] << 24);
+  
+  return tid;
+  
+}
+
+static u32 RollShinyPersonalityChance(u8 targetNature, u8 ForceShiny)
+{
+    u32 personality;
+    u32 value;
+    u32 BoostedShinyValue;
+	u8 IsShiny = FALSE;
+	u32 Tmp_RNG;
+	u8 PIDNature;
+	u32 AdditionalShinyValue = 0;
+	
+	Tmp_RNG = gRngValue;
+	
+	if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
+        && GetMonAbility(&gPlayerParty[0]) == ABILITY_SYNCHRONIZE)
+	{
+        PIDNature = GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
+    }
+	else
+	{
+		PIDNature = targetNature;
+    }
+    if (IsPokedexComplete())
+    {
+        BoostedShinyValue = 2730 - AdditionalShinyValue;  // ~1/2730
+    }
+    else
+    {
+        BoostedShinyValue = 4096 - AdditionalShinyValue;
+    }
+	if (ForceShiny)
+	{
+		BoostedShinyValue = 1;
+	}
+    if ((Random32() % BoostedShinyValue) == 0
+        || FlagGet(FLAG_STARTER_SHINY_0)
+        || FlagGet(FLAG_STARTER_SHINY_1)
+        || FlagGet(FLAG_STARTER_SHINY_2))
+    {
+        gSoftResetDisabled = TRUE;
+		IsShiny = TRUE;
+
+        value = GetTrainerShinyValue();
+
+        do
+        {
+            personality = Random32();
+        }
+        while (
+		(!IsShiny && GetNatureFromPersonality(personality) != PIDNature)
+		|| (!FlagGet(FLAG_IS_SHINY_EGG) && ((HIHALF(value) ^ LOHALF(value)
+			^ HIHALF(personality) ^ LOHALF(personality)) >= SHINY_ODDS))
+		);
+    }
+    else
+    {	
+		do
+		{
+			personality = Random32();
+		}
+		while (GetNatureFromPersonality(personality) != PIDNature);
+    }
+
+	ivValue1 = Random();
+	ivValue2 = Random();
+	gRngValue = Tmp_RNG;
+    return personality;
+
+}
+
+u8 GetStarterIdFromSpecies(u16 species)
+{
+    switch (species)
+    {
+    case SPECIES_SQUIRTLE: return 1;
+    case SPECIES_BULBASAUR: return 1;
+    case SPECIES_CHARMANDER:  return 1;
+    default: return 0;
+    }
+}
+
 void CreateMon(struct Pokemon *mon, u16 species, u8 level, u8 fixedIV, u8 hasFixedPersonality, u32 fixedPersonality, u8 otIdType, u32 fixedOtId)
 {
     u32 arg;
@@ -1772,11 +1894,30 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
 
     ZeroBoxMonData(boxMon);
 
-    if (hasFixedPersonality)
-        personality = fixedPersonality;
+    if (!hasFixedPersonality)
+	{
+		personality = RollShinyPersonalityChance (Random() % 24, FALSE);
+	}
     else
-        personality = Random32();
-
+	{
+		if (FlagGet (FLAG_IS_EGG) && FlagGet (FLAG_IS_SHINY_EGG))
+		{
+			personality = RollShinyPersonalityChance (Random() % 24, TRUE);
+		}
+		else
+		{
+			if (species != SPECIES_ENTEI && species != SPECIES_RAIKOU && species != SPECIES_SUICUNE)
+			{
+				personality = RollShinyPersonalityChance (GetNatureFromPersonality (fixedPersonality), FALSE);
+			}
+			else
+			{
+				personality = fixedPersonality;
+				ivValue1 = fixedIV;
+			}
+		}
+	}
+	
     SetBoxMonData(boxMon, MON_DATA_PERSONALITY, &personality);
 
     //Determine original trainer ID
@@ -1820,20 +1961,25 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
     value = ITEM_POKE_BALL;
     SetBoxMonData(boxMon, MON_DATA_POKEBALL, &value);
     SetBoxMonData(boxMon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
+	FlagClear(FLAG_STARTER_SHINY_0);
+	FlagClear(FLAG_STARTER_SHINY_1);
+	FlagClear(FLAG_STARTER_SHINY_2);
+	FlagClear (FLAG_IS_EGG);
+	FlagClear (FLAG_IS_SHINY_EGG);
 
     if (fixedIV < USE_RANDOM_IVS)
     {
-        SetBoxMonData(boxMon, MON_DATA_HP_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_ATK_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_DEF_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPATK_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPDEF_IV, &fixedIV);
+        SetBoxMonData(boxMon, MON_DATA_HP_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_ATK_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_DEF_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPATK_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPDEF_IV, &ivValue1);
     }
     else
     {
         u32 iv;
-        value = Random();
+        value = ivValue1;
 
         iv = value & MAX_IV_MASK;
         SetBoxMonData(boxMon, MON_DATA_HP_IV, &iv);
@@ -1842,7 +1988,7 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
         iv = (value & (MAX_IV_MASK << 10)) >> 10;
         SetBoxMonData(boxMon, MON_DATA_DEF_IV, &iv);
 
-        value = Random();
+        value = ivValue2;
 
         iv = value & MAX_IV_MASK;
         SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &iv);

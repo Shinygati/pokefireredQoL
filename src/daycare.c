@@ -381,6 +381,48 @@ u8 CountPokemonInDaycare(struct DayCare *daycare)
     return count;
 }
 
+static u32 GetEggShinyValue(void)
+{
+	u32 tid;
+	
+	tid =
+    gSaveBlock2Ptr->playerTrainerId[0]
+  | (gSaveBlock2Ptr->playerTrainerId[1] << 8)
+  | (gSaveBlock2Ptr->playerTrainerId[2] << 16)
+  | (gSaveBlock2Ptr->playerTrainerId[3] << 24);
+  
+  return tid;
+  
+}
+
+static u32 GenerateEggPersonality(u8 personality)
+{
+    u32 value;
+    u32 BoostedShinyValue;
+	u8 IsShiny = FALSE;
+	u32 NewPersonality;
+	
+	NewPersonality = personality;
+	
+    BoostedShinyValue = 512;
+	
+    if ((Random32() % BoostedShinyValue) == 0)
+    {
+		FlagSet (FLAG_IS_SHINY_EGG);
+		FlagSet (FLAG_IS_EGG);
+        value = GetEggShinyValue();
+        do
+        {
+			NewPersonality = Random32();
+        }
+        while ((HIHALF(value) ^ LOHALF(value) ^ HIHALF(NewPersonality) ^ LOHALF(NewPersonality)) >= SHINY_ODDS);
+    }
+    else
+	FlagSet (FLAG_IS_EGG);
+    return NewPersonality;
+
+}
+
 void InitDaycareMailRecordMixing(struct DayCare *daycare, struct RecordMixingDayCareMail *daycareMail)
 {
     u8 i;
@@ -1067,6 +1109,7 @@ static void _GiveEggFromDaycare(struct DayCare *daycare)
     u8 parentSlots[DAYCARE_MON_COUNT];
     bool8 isEgg;
 
+	FlagSet(FLAG_IS_EGG);
     species = DetermineEggSpeciesAndParentSlots(daycare, parentSlots);
     AlterEggSpeciesWithIncenseItem(&species, daycare);
     SetInitialEggData(&egg, species, daycare);
@@ -1091,6 +1134,13 @@ void CreateEgg(struct Pokemon *mon, u16 species, bool8 setHotSpringsLocation)
     u8 language;
     u8 metLocation;
     u8 isEgg;
+	u32 personality;
+	
+	if (setHotSpringsLocation)
+	{
+		FlagSet (FLAG_IS_EGG);
+		personality = GenerateEggPersonality(Random32());
+	}
 
     CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
     metLevel = 0;
@@ -1118,7 +1168,7 @@ static void SetInitialEggData(struct Pokemon *mon, u16 species, struct DayCare *
     u8 metLevel;
     u8 language;
 
-    personality = daycare->offspringPersonality | (Random() << 16);
+    personality = GenerateEggPersonality(daycare->offspringPersonality);
     CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);
     metLevel = 0;
     ball = ITEM_POKE_BALL;

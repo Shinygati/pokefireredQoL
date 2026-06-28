@@ -16,7 +16,7 @@ CeladonCity_GameCorner_PrizeRoom_Text_WhichPrize::
     .string "Which prize would you like?$"
 
 CeladonCity_GameCorner_PrizeRoom_Text_HereYouGo::
-    .string "はい どうぞ$"
+    .string "Here you go!$"
 
 CeladonCity_GameCorner_PrizeRoom_Text_YouWantPrize::
     .string "So, you want the {STR_VAR_1}?$"
@@ -30,8 +30,8 @@ CeladonCity_GameCorner_PrizeRoom_Text_NeedMoreCoins::
     .string "than that.$"
 
 CeladonCity_GameCorner_PrizeRoom_Text_OopsNotEnoughRoom::
-    .string "おきゃくさん もう もてないよ$"
+    .string "You already have this item.{PAUSE_UNTIL_PRESS}$"
 
 CeladonCity_GameCorner_PrizeRoom_Text_OhFineThen::
-    .string "あっ そう$"
+    .string "Oh fine then.$"
 

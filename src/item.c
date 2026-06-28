@@ -265,8 +265,9 @@ bool8 RemoveBagItem(u16 itemId, u16 count)
 {
     u8 i;
     u8 pocket;
+	
 
-    if (ItemId_GetPocket(itemId) == 0)
+    if (ItemId_GetPocket(itemId) == 0 || ItemId_GetPocket(itemId) != POCKET_TM_CASE)
         return FALSE;
 
     if (itemId == ITEM_NONE)

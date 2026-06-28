@@ -323,7 +323,7 @@ CeladonCity_GameCorner_PrizeRoom_EventScript_TryGivePrize::
 
 CeladonCity_GameCorner_PrizeRoom_EventScript_BagFull::
 	textcolor NPC_TEXT_COLOR_NEUTRAL
-	msgbox Text_TooBadBagFull
+	msgbox gText_YouAlreadyHaveThis, MSGBOX_DEFAULT
 	hidecoinsbox 0, 0
 	release
 	end
