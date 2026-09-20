@@ -381,6 +381,47 @@ u8 CountPokemonInDaycare(struct DayCare *daycare)
     return count;
 }
 
+static u32 GetEggShinyValue(void)
+{
+	u32 tid;
+	
+	tid =
+    gSaveBlock2Ptr->playerTrainerId[0]
+  | (gSaveBlock2Ptr->playerTrainerId[1] << 8)
+  | (gSaveBlock2Ptr->playerTrainerId[2] << 16)
+  | (gSaveBlock2Ptr->playerTrainerId[3] << 24);
+  
+  return tid;
+  
+}
+
+static u32 GenerateEggPersonality(u8 personality)
+{
+    u32 value;
+    u32 BoostedShinyValue;
+	u8 IsShiny = FALSE;
+	u32 NewPersonality;
+	
+	NewPersonality = personality;
+	
+    BoostedShinyValue = 512;
+	
+    if ((Random32() % BoostedShinyValue) == 0)
+    {
+		FlagSet (0x115);
+        value = GetEggShinyValue();
+        do
+        {
+			NewPersonality = Random32();
+        }
+        while ((HIHALF(value) ^ LOHALF(value) ^ HIHALF(NewPersonality) ^ LOHALF(NewPersonality)) >= SHINY_ODDS);
+    }
+    else
+	FlagSet (0x116);
+    return NewPersonality;
+
+}
+
 void InitDaycareMailRecordMixing(struct DayCare *daycare, struct RecordMixingDayCareMail *daycareMail)
 {
     u8 i;
@@ -1091,8 +1132,9 @@ void CreateEgg(struct Pokemon *mon, u16 species, bool8 setHotSpringsLocation)
     u8 language;
     u8 metLocation;
     u8 isEgg;
+	u32 personality;
 
-    CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+    CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, personality, OT_ID_PLAYER_ID, 0);
     metLevel = 0;
     ball = ITEM_POKE_BALL;
     language = LANGUAGE_JAPANESE;
@@ -1118,7 +1160,7 @@ static void SetInitialEggData(struct Pokemon *mon, u16 species, struct DayCare *
     u8 metLevel;
     u8 language;
 
-    personality = daycare->offspringPersonality | (Random() << 16);
+    personality = GenerateEggPersonality(daycare->offspringPersonality);
     CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);
     metLevel = 0;
     ball = ITEM_POKE_BALL;

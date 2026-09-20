@@ -36,6 +36,7 @@
 #include "constants/hold_effects.h"
 #include "constants/battle_move_effects.h"
 #include "constants/union_room.h"
+#include "wild_encounter.h"
 
 #define SPECIES_TO_HOENN(name)      [SPECIES_##name - 1] = HOENN_DEX_##name
 #define SPECIES_TO_NATIONAL(name)   [SPECIES_##name - 1] = NATIONAL_DEX_##name
@@ -78,6 +79,8 @@ static void GiveBoxMonInitialMoveset(struct BoxPokemon *boxMon);
 static u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, u16 move);
 static u8 GetLevelFromMonExp(struct Pokemon *mon);
 static u16 CalculateBoxMonChecksum(struct BoxPokemon *boxMon);
+static u32 ivValue1;
+static u32 ivValue2;
 
 #include "data/battle_moves.h"
 
@@ -1752,6 +1755,76 @@ void ZeroEnemyPartyMons(void)
         ZeroMonData(&gEnemyParty[i]);
 }
 
+static u32 GetTrainerShinyValue(void)
+{
+	u32 tid;
+	
+	tid = gSaveBlock2Ptr->playerTrainerId[0]
+  | (gSaveBlock2Ptr->playerTrainerId[1] << 8)
+  | (gSaveBlock2Ptr->playerTrainerId[2] << 16)
+  | (gSaveBlock2Ptr->playerTrainerId[3] << 24);
+  
+  return tid;
+  
+}
+
+static u32 RollShinyPersonalityChance(u8 targetNature, u8 ForceShiny)
+{
+    u32 personality;
+    u32 value;
+    u32 BoostedShinyValue;
+	u8 IsShiny = FALSE;
+	u32 Tmp_RNG;
+	u8 PIDNature;
+	
+	Tmp_RNG = gRngValue;
+	BoostedShinyValue = 512;
+	
+	if (!GetMonData(&gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
+        && GetMonAbility(&gPlayerParty[0]) == ABILITY_SYNCHRONIZE)
+	{
+        PIDNature = GetMonData(&gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
+    }
+	else
+	{
+		PIDNature = targetNature;
+    }
+	if (ForceShiny)
+	{
+		BoostedShinyValue = 1;
+	}
+    if ((Random32() % BoostedShinyValue) == 0)
+    {
+        gSoftResetDisabled = TRUE;
+		IsShiny = TRUE;
+
+        value = GetTrainerShinyValue();
+
+        do
+        {
+            personality = Random32();
+        }
+        while (
+		(!FlagGet (0x116) && ((HIHALF(value) ^ LOHALF(value)
+			^ HIHALF(personality) ^ LOHALF(personality)) >= SHINY_ODDS))
+		);
+    }
+    else
+    {	
+		do
+		{
+			personality = Random32();
+		}
+		while (GetNatureFromPersonality(personality) != PIDNature);
+    }
+
+	ivValue1 = Random();
+	ivValue2 = Random();
+	gRngValue = Tmp_RNG;
+    return personality;
+
+}
+
 void CreateMon(struct Pokemon *mon, u16 species, u8 level, u8 fixedIV, u8 hasFixedPersonality, u32 fixedPersonality, u8 otIdType, u32 fixedOtId)
 {
     u32 arg;
@@ -1772,11 +1845,16 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
 
     ZeroBoxMonData(boxMon);
 
-    if (hasFixedPersonality)
-        personality = fixedPersonality;
+    if (!hasFixedPersonality)
+	{
+		personality = RollShinyPersonalityChance (Random() % 24, FALSE);
+	}
     else
-        personality = Random32();
-
+	{
+		personality = RollShinyPersonalityChance (GetNatureFromPersonality (fixedPersonality), (FlagGet(0x115)));
+			
+	}
+	
     SetBoxMonData(boxMon, MON_DATA_PERSONALITY, &personality);
 
     //Determine original trainer ID
@@ -1820,20 +1898,22 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
     value = ITEM_POKE_BALL;
     SetBoxMonData(boxMon, MON_DATA_POKEBALL, &value);
     SetBoxMonData(boxMon, MON_DATA_OT_GENDER, &gSaveBlock2Ptr->playerGender);
+	FlagClear (0x115);
 
     if (fixedIV < USE_RANDOM_IVS)
     {
-        SetBoxMonData(boxMon, MON_DATA_HP_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_ATK_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_DEF_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPATK_IV, &fixedIV);
-        SetBoxMonData(boxMon, MON_DATA_SPDEF_IV, &fixedIV);
+        SetBoxMonData(boxMon, MON_DATA_HP_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_ATK_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_DEF_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPATK_IV, &ivValue1);
+        SetBoxMonData(boxMon, MON_DATA_SPDEF_IV, &ivValue1);
     }
     else
     {
         u32 iv;
-        value = Random();
+		
+        value = ivValue1;
 
         iv = value & MAX_IV_MASK;
         SetBoxMonData(boxMon, MON_DATA_HP_IV, &iv);
@@ -1842,7 +1922,7 @@ void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, 
         iv = (value & (MAX_IV_MASK << 10)) >> 10;
         SetBoxMonData(boxMon, MON_DATA_DEF_IV, &iv);
 
-        value = Random();
+        value = ivValue2;
 
         iv = value & MAX_IV_MASK;
         SetBoxMonData(boxMon, MON_DATA_SPEED_IV, &iv);
