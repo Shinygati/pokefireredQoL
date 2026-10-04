@@ -38,6 +38,8 @@
 #include "constants/maps.h"
 #include "constants/sound.h"
 #include "sloopsvc.h"
+#include "constants/items.h"
+#include "constants/moves.h"
 
 extern u16 (*const gSpecials[])(void);
 extern u16 (*const gSpecialsEnd[])(void);
@@ -1778,20 +1780,95 @@ bool8 ScrCmd_checkpartymove(struct ScriptContext * ctx)
 {
     u8 i;
     u16 moveId = ScriptReadHalfword(ctx);
+    u16 hmItem = ITEM_NONE;
+    u8 hmIndex = 0;
 
     gSpecialVar_Result = PARTY_SIZE;
+
+    // First, check for a Pokemon that already knows the move.
     for (i = 0; i < PARTY_SIZE; i++)
     {
         u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL);
+
         if (!species)
             break;
-        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG) && MonKnowsMove(&gPlayerParty[i], moveId) == TRUE)
+
+        if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)
+            && MonKnowsMove(&gPlayerParty[i], moveId) == TRUE)
         {
             gSpecialVar_Result = i;
             gSpecialVar_0x8004 = species;
             break;
         }
     }
+
+    // If no Pokemon knows the move, check whether this is an HM.
+    if (gSpecialVar_Result == PARTY_SIZE)
+    {
+        switch (moveId)
+        {
+        case MOVE_CUT:
+            hmItem = ITEM_HM01;
+            hmIndex = 50;
+            break;
+
+        case MOVE_FLY:
+            hmItem = ITEM_HM02;
+            hmIndex = 51;
+            break;
+
+        case MOVE_SURF:
+            hmItem = ITEM_HM03;
+            hmIndex = 52;
+            break;
+
+        case MOVE_STRENGTH:
+            hmItem = ITEM_HM04;
+            hmIndex = 53;
+            break;
+
+        case MOVE_FLASH:
+            hmItem = ITEM_HM05;
+            hmIndex = 54;
+            break;
+
+        case MOVE_ROCK_SMASH:
+            hmItem = ITEM_HM06;
+            hmIndex = 55;
+            break;
+
+        case MOVE_WATERFALL:
+            hmItem = ITEM_HM07;
+            hmIndex = 56;
+            break;
+
+        default:
+            hmItem = ITEM_NONE;
+            break;
+        }
+
+        // The HM must be in the player's Bag.
+        if (hmItem != ITEM_NONE && CheckBagHasItem(hmItem, 1))
+        {
+            for (i = 0; i < PARTY_SIZE; i++)
+            {
+                u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES, NULL);
+
+                if (!species)
+                    break;
+
+                // Eggs cannot use field moves.
+                if (!GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)
+                    && CanMonLearnTMHM(&gPlayerParty[i], hmIndex))
+                {
+                    gSpecialVar_Result = i;
+                    gSpecialVar_0x8004 = species;
+                    break;
+                }
+            }
+        }
+    }
+
     return FALSE;
 }
 

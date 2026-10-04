@@ -2023,219 +2023,12 @@ static void SetHelpSystemSubmenuItems(struct HelpSystemListMenu * helpListMenu, 
 static bool8 HelpSystem_ShouldShowBasicTerms(void)
 {
     if (FlagGet(FLAG_DEFEATED_BROCK) == TRUE && gHelpSystemState.topic == TOPIC_TERMS)
-        return TRUE;
+        return FALSE;
     return FALSE;
 }
 
 static bool8 IsHelpSystemSubmenuEnabled(u8 id)
 {
-    u8 i = 0;
-
-    if (gHelpSystemState.topic == TOPIC_WHAT_TO_DO)
-    {
-        switch (id)
-        {
-        case HELP_PLAYING_FOR_FIRST_TIME:
-        case HELP_WHAT_SHOULD_I_BE_DOING:
-        case HELP_CANT_GET_OUT_OF_ROOM:
-        case HELP_TALKED_TO_EVERYONE_NOW_WHAT:
-        case HELP_OUT_OF_THINGS_TO_DO:
-        case HELP_NOTHING_I_WANT_TO_KNOW:
-        case HELP_WHATS_A_MON:
-        case HELP_WHAT_DO_I_DO_IN_SAFARI:
-        case HELP_WHAT_ARE_SAFARI_RULES:
-        case HELP_WANT_TO_END_SAFARI:
-            return TRUE;
-        case HELP_CANT_FIND_PERSON_I_WANT:
-            return FlagGet(FLAG_VISITED_OAKS_LAB);
-        case HELP_SOMEONE_BLOCKING_MY_WAY:
-        case HELP_WHAT_ARE_MY_ADVENTURE_BASICS:
-        case HELP_HOW_DO_I_PREPARE_FOR_BATTLE:
-        case HELP_WHAT_IS_STATUS_PROBLEM:
-        case HELP_RAN_OUT_OF_POTIONS:
-        case HELP_WHATS_POKEMON_CENTER:
-        case HELP_WHATS_POKEMON_MART:
-            return FlagGet(FLAG_WORLD_MAP_VIRIDIAN_CITY);
-        case HELP_I_CANT_GO_ON:
-            return FlagGet(FLAG_WORLD_MAP_VERMILION_CITY);
-        case HELP_HOW_ARE_ROADS_FORESTS_DIFFERENT:
-        case HELP_WHATS_A_TRAINER:
-            return FlagGet(FLAG_WORLD_MAP_VIRIDIAN_FOREST);
-        case HELP_WHAT_HAPPENED_TO_ITEM_I_GOT:
-        case HELP_WHEN_CAN_I_USE_ITEM:
-        case HELP_HOW_DO_I_PROGRESS:
-        case HELP_WHATS_A_BATTLE:
-        case HELP_WHAT_IS_A_MONS_VITALITY:
-        case HELP_MY_MONS_ARE_HURT:
-        case HELP_WHAT_HAPPENS_IF_ALL_MY_MONS_FAINT:
-        case HELP_WHERE_DO_MONS_APPEAR:
-        case HELP_WHAT_MOVES_SHOULD_I_USE:
-        case HELP_WANT_TO_MAKE_MON_STRONGER:
-        case HELP_WANT_TO_END_GAME:
-            return FlagGet(FLAG_SYS_POKEMON_GET);
-        case HELP_CANT_CATCH_MONS:
-        case HELP_CAN_I_BUY_POKEBALLS:
-            return FlagGet(FLAG_SYS_POKEDEX_GET);
-        case HELP_HOW_ARE_CAVES_DIFFERENT:
-        case HELP_WHAT_DO_I_DO_IN_CAVE:
-        case HELP_HOW_DO_I_WIN_AGAINST_TRAINER:
-        case HELP_FOE_MONS_TOO_STRONG:
-        case HELP_WHAT_ARE_MOVES:
-        case HELP_WANT_TO_ADD_MORE_MOVES:
-            return FlagGet(FLAG_BADGE01_GET);
-        case HELP_WHAT_ARE_HIDDEN_MOVES:
-        case HELP_WHAT_DOES_HIDDEN_MOVE_DO:
-            return HasGottenAtLeastOneHM();
-        case HELP_WHAT_IS_THAT_PERSON_LIKE:
-            return FlagGet(FLAG_GOT_FAME_CHECKER);
-        case HELP_WHAT_IS_A_GYM:
-            return FlagGet(FLAG_WORLD_MAP_PEWTER_CITY);
-        }
-        return FALSE;
-    }
-    if (gHelpSystemState.topic == TOPIC_HOW_TO_DO)
-    {
-        switch (id)
-        {
-        case HELP_USING_BAG:
-        case HELP_USING_PLAYER:
-        case HELP_USING_SAVE:
-        case HELP_USING_OPTION:
-        case HELP_ENTERING_NAME:
-        case HELP_USING_PC:
-        case HELP_USING_BILLS_PC:
-        case HELP_USING_WITHDRAW:
-        case HELP_USING_DEPOSIT:
-        case HELP_USING_MOVE:
-        case HELP_MOVING_ITEMS:
-        case HELP_USING_PLAYERS_PC:
-        case HELP_USING_WITHDRAW_ITEM:
-        case HELP_USING_DEPOSIT_ITEM:
-        case HELP_USING_MAILBOX:
-        case HELP_OPENING_MENU:
-        case HELP_USING_BAG2:
-        case HELP_USING_HOME_PC:
-        case HELP_USING_ITEM_STORAGE:
-        case HELP_USING_WITHDRAW_ITEM2:
-        case HELP_USING_DEPOSIT_ITEM2:
-        case HELP_USING_MAILBOX2:
-        case HELP_USING_BALL:
-        case HELP_USING_BAIT:
-        case HELP_USING_ROCK:
-            return TRUE;
-        case HELP_USING_POKEDEX:
-        case HELP_USING_PROF_OAKS_PC:
-        case HELP_READING_POKEDEX:
-            return FlagGet(FLAG_SYS_POKEDEX_GET);
-        case HELP_USING_TOWN_MAP:
-            return CheckBagHasItem(ITEM_TOWN_MAP, 1);
-        case HELP_USING_POKEMON:
-        case HELP_USING_SUMMARY:
-        case HELP_USING_ITEM:
-        case HELP_USING_AN_ITEM:
-        case HELP_USING_KEYITEM:
-        case HELP_USING_POKEBALL:
-        case HELP_USING_POTION:
-        case HELP_USING_FIGHT:
-        case HELP_USING_POKEMON2:
-        case HELP_USING_SUMMARY2:
-        case HELP_USING_RUN:
-        case HELP_REGISTER_KEY_ITEM:
-            return FlagGet(FLAG_SYS_POKEMON_GET);
-        case HELP_USING_SWITCH:
-        case HELP_USING_SHIFT:
-            // Only show if player has caught mon after starter
-            if (GetKantoPokedexCount(1) > 1)
-                return TRUE;
-            return FALSE;
-        case HELP_USING_TM:
-            return FlagGet(FLAG_BADGE01_GET);
-        case HELP_USING_HM:
-        case HELP_USING_MOVE_OUTSIDE_OF_BATTLE:
-            return HasGottenAtLeastOneHM();
-        case HELP_RIDING_BICYCLE:
-            return FlagGet(FLAG_GOT_BICYCLE);
-        case HELP_USING_HALL_OF_FAME:
-            return FlagGet(FLAG_SYS_GAME_CLEAR);
-        }
-        return FALSE;
-    }
-    if (gHelpSystemState.topic == TOPIC_TERMS)
-    {
-        if (HelpSystem_ShouldShowBasicTerms() == TRUE)
-        {
-            // After defeating Brock, all basic terms are added
-            // This checks to make sure they arent added twice
-            for (i = 0; sTerms_Basic[i] != HELP_END; i++)
-            {
-                if (sTerms_Basic[i] == id)
-                    return FALSE;
-            }
-        }
-        switch (id)
-        {
-        case HELP_TERM_MONEY:
-        case HELP_TERM_ID_NO:
-        case HELP_TERM_ITEMS:
-        case HELP_TERM_KEYITEMS:
-        case HELP_TERM_POKEBALLS:
-        case HELP_TERM_POKEDEX:
-        case HELP_TERM_PLAY_TIME:
-        case HELP_TERM_BADGES:
-        case HELP_TERM_TEXT_SPEED:
-        case HELP_TERM_BATTLE_SCENE:
-        case HELP_TERM_BATTLE_STYLE:
-        case HELP_TERM_SOUND:
-        case HELP_TERM_BUTTON_MODE:
-        case HELP_TERM_FRAME:
-        case HELP_TERM_CANCEL:
-        case HELP_TERM_TM:
-        case HELP_TERM_EVOLUTION:
-            return TRUE;
-        case HELP_TERM_HP:
-        case HELP_TERM_EXP:
-        case HELP_TERM_ATTACK:
-        case HELP_TERM_DEFENSE:
-        case HELP_TERM_SPATK:
-        case HELP_TERM_SPDEF:
-        case HELP_TERM_SPEED:
-        case HELP_TERM_LEVEL:
-        case HELP_TERM_TYPE:
-        case HELP_TERM_OT:
-        case HELP_TERM_ITEM:
-        case HELP_TERM_ABILITY:
-        case HELP_TERM_NATURE:
-        case HELP_TERM_POWER:
-        case HELP_TERM_ACCURACY:
-        case HELP_TERM_FNT:
-            return FlagGet(FLAG_SYS_POKEMON_GET);
-        case HELP_TERM_HM:
-        case HELP_TERM_HM_MOVE:
-            return HasGottenAtLeastOneHM();
-        case HELP_TERM_MOVES:
-        case HELP_TERM_MOVE_TYPE:
-        case HELP_TERM_PP:
-        case HELP_TERM_STATUS_PROBLEM:
-            return FlagGet(FLAG_WORLD_MAP_VIRIDIAN_FOREST);
-        }
-        return TRUE;
-    }
-    if (gHelpSystemState.topic == TOPIC_ABOUT_GAME)
-    {
-        switch (id)
-        {
-        case HELP_GAME_FUNDAMENTALS_2:
-            return FlagGet(FLAG_BADGE01_GET);
-        case HELP_GAME_FUNDAMENTALS_3:
-            return FlagGet(FLAG_BADGE02_GET);
-        }
-        return TRUE;
-    }
-    if (gHelpSystemState.topic == TOPIC_TYPE_MATCHUP)
-    {
-        return TRUE;
-    }
-
     return FALSE;
 }
 
@@ -2420,7 +2213,7 @@ bool8 HelpMenuSubroutine_HelpItemPrint(struct HelpSystemListMenu * helpListMenu,
     HS_ShowOrHideMainWindowText(1);
     HS_ShowOrHideControlsGuideInTopRight(1);
     helpListMenu->state = 6;
-    return TRUE;
+    return FALSE;
 }
 
 bool8 HelpMenuSubroutine_ReturnFromHelpItem(struct HelpSystemListMenu * helpListMenu, struct ListMenuItem * listMenuItemsBuffer)
@@ -2430,7 +2223,7 @@ bool8 HelpMenuSubroutine_ReturnFromHelpItem(struct HelpSystemListMenu * helpList
     HS_UpdateMenuScrollArrows();
     HelpSystem_SetInputDelay(2);
     helpListMenu->state = 3;
-    return TRUE;
+    return FALSE;
 }
 
 bool8 HelpMenuSubroutine_HelpItemWaitButton(struct HelpSystemListMenu * helpListMenu, struct ListMenuItem * listMenuItemsBuffer)
@@ -2439,11 +2232,11 @@ bool8 HelpMenuSubroutine_HelpItemWaitButton(struct HelpSystemListMenu * helpList
     {
         PlaySE(SE_SELECT);
         helpListMenu->state = 5;
-        return TRUE;
+        return FALSE;
     }
     if (JOY_NEW(L_BUTTON | R_BUTTON))
         return FALSE;
-    return TRUE;
+    return FALSE;
 }
 
 static void PrintWelcomeMessageOnPanel1(void)

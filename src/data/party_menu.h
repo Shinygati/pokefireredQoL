@@ -1049,6 +1049,7 @@ enum
     CURSOR_OPTION_REGISTER,
     CURSOR_OPTION_TRADE1,
     CURSOR_OPTION_TRADE2,
+	CURSOR_OPTION_STAT_EDIT,
     CURSOR_OPTION_FIELD_MOVES,
 };
 
@@ -1059,6 +1060,7 @@ static struct
 } const sCursorOptions[] =
 {
     [CURSOR_OPTION_SUMMARY]                              = {gText_Summary5,               CursorCB_Summary  },
+	[CURSOR_OPTION_STAT_EDIT]                            = {gText_StatEditor,             CursorCB_StatEdit },
     [CURSOR_OPTION_SWITCH]                               = {gText_Switch2,                CursorCB_Switch   },
     [CURSOR_OPTION_CANCEL1]                              = {gFameCheckerText_Cancel,      CursorCB_Cancel1  },
     [CURSOR_OPTION_ITEM]                                 = {gText_Item,                   CursorCB_Item     },

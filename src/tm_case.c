@@ -44,14 +44,13 @@ enum {
 
 // Window IDs for the context menu that opens when a TM/HM is selected
 enum {
-    WIN_USE_GIVE_EXIT,
-    WIN_GIVE_EXIT,
+    WIN_USE_EXIT,
+    WIN_EXIT,
 };
 
 // IDs for the actions in the context menu
 enum {
     ACTION_USE,
-    ACTION_GIVE,
     ACTION_EXIT
 };
 
@@ -141,15 +140,11 @@ static void Task_HandleListInput(u8 taskId);
 static void Task_SelectedTMHM_Field(u8 taskId);
 static void Task_ContextMenu_HandleInput(u8 taskId);
 static void Action_Use(u8 taskId);
-static void Action_Give(u8 taskId);
 static void PrintError_ThereIsNoPokemon(u8 taskId);
 static void PrintError_ItemCantBeHeld(u8 taskId);
 static void Task_WaitButtonAfterErrorPrint(u8 taskId);
 static void CloseMessageAndReturnToList(u8 taskId);
 static void Action_Exit(u8 taskId);
-static void Task_SelectedTMHM_GiveParty(u8 taskId);
-static void Task_SelectedTMHM_GivePC(u8 taskId);
-static void Task_SelectedTMHM_Sell(u8 taskId);
 static void Task_AskConfirmSaleWithAmount(u8 taskId);
 static void Task_PlaceYesNoBox(u8 taskId);
 static void Task_SaleOfTMsCanceled(u8 taskId);
@@ -212,20 +207,16 @@ static const struct BgTemplate sBGTemplates[] = {
 // The list of functions to run when a TM/HM is selected.
 // What happens when one is selected depends on how the player arrived at the TM case
 static void (*const sSelectTMActionTasks[])(u8 taskId) = {
-    [TMCASE_FIELD]      = Task_SelectedTMHM_Field,
-    [TMCASE_GIVE_PARTY] = Task_SelectedTMHM_GiveParty,
-    [TMCASE_SELL]       = Task_SelectedTMHM_Sell,
-    [TMCASE_GIVE_PC]    = Task_SelectedTMHM_GivePC
+    [TMCASE_FIELD]      = Task_SelectedTMHM_Field
 };
 
 static const struct MenuAction sMenuActions[] = {
     [ACTION_USE]  = {gOtherText_Use,  Action_Use },
-    [ACTION_GIVE] = {gOtherText_Give, Action_Give},
     [ACTION_EXIT] = {gOtherText_Exit, Action_Exit},
 };
 
-static const u8 sMenuActionIndices_Field[] = {ACTION_USE, ACTION_GIVE, ACTION_EXIT};
-static const u8 sMenuActionIndices_UnionRoom[] = {ACTION_GIVE, ACTION_EXIT};
+static const u8 sMenuActionIndices_Field[] = {ACTION_USE, ACTION_EXIT};
+static const u8 sMenuActionIndices_UnionRoom[] = {ACTION_EXIT};
 
 static const struct YesNoFuncTable sYesNoFuncTable = {Task_PrintSaleConfirmedText, Task_SaleOfTMsCanceled};
 
@@ -337,7 +328,7 @@ static const struct WindowTemplate sYesNoWindowTemplate = {
 };
 
 static const struct WindowTemplate sWindowTemplates_ContextMenu[] = {
-    [WIN_USE_GIVE_EXIT] = {
+    [WIN_USE_EXIT] = {
         .bg = 1,
         .tilemapLeft = 22,
         .tilemapTop = 13,
@@ -346,7 +337,7 @@ static const struct WindowTemplate sWindowTemplates_ContextMenu[] = {
         .paletteNum = 15,
         .baseBlock = 0x1cf
     },
-    [WIN_GIVE_EXIT] = {
+    [WIN_EXIT] = {
         .bg = 1,
         .tilemapLeft = 22,
         .tilemapTop = 15,
@@ -719,16 +710,10 @@ static void List_ItemPrintFunc(u8 windowId, u32 itemIndex, u8 y)
 {
     if (itemIndex != LIST_CANCEL)
     {
-        if (!IS_HM(BagGetItemIdByPocketPosition(POCKET_TM_CASE, itemIndex)))
-        {
-            ConvertIntToDecimalStringN(gStringVar1, BagGetQuantityByPocketPosition(POCKET_TM_CASE, itemIndex), STR_CONV_MODE_RIGHT_ALIGN, 3);
-            StringExpandPlaceholders(gStringVar4, gText_TimesStrVar1);
-            TMCase_Print(windowId, FONT_SMALL, gStringVar4, 126, y, 0, 0, TEXT_SKIP_DRAW, COLOR_DARK);
-        }
-        else
-        {
+        u16 itemId = BagGetItemIdByPocketPosition(POCKET_TM_CASE, itemIndex);
+
+        if (itemId >= ITEM_HM01 && itemId <= ITEM_HM08)
             PlaceHMTileInWindow(windowId, 8, y);
-        }
     }
 }
 
@@ -950,14 +935,14 @@ static void Task_SelectedTMHM_Field(u8 taskId)
     if (!MenuHelpers_IsLinkActive() && InUnionRoom() != TRUE)
     {
         // Regular TM/HM context menu
-        AddContextMenu(&sTMCaseDynamicResources->contextMenuWindowId, WIN_USE_GIVE_EXIT);
+        AddContextMenu(&sTMCaseDynamicResources->contextMenuWindowId, WIN_USE_EXIT);
         sTMCaseDynamicResources->menuActionIndices = sMenuActionIndices_Field;
         sTMCaseDynamicResources->numMenuActions = ARRAY_COUNT(sMenuActionIndices_Field);
     }
     else
     {
         // In Union Room, "Use" is removed from the context menu
-        AddContextMenu(&sTMCaseDynamicResources->contextMenuWindowId, WIN_GIVE_EXIT);
+        AddContextMenu(&sTMCaseDynamicResources->contextMenuWindowId, WIN_EXIT);
         sTMCaseDynamicResources->menuActionIndices = sMenuActionIndices_UnionRoom;
         sTMCaseDynamicResources->numMenuActions = ARRAY_COUNT(sMenuActionIndices_UnionRoom);
     }
@@ -1037,36 +1022,6 @@ static void Action_Use(u8 taskId)
     }
 }
 
-static void Action_Give(u8 taskId)
-{
-    s16 * data = gTasks[taskId].data;
-    u16 itemId = BagGetItemIdByPocketPosition(POCKET_TM_CASE, tSelection);
-    RemoveContextMenu(&sTMCaseDynamicResources->contextMenuWindowId);
-    ClearStdWindowAndFrameToTransparent(WIN_SELECTED_MSG, FALSE);
-    ClearWindowTilemap(WIN_SELECTED_MSG);
-    PutWindowTilemap(WIN_DESCRIPTION);
-    PutWindowTilemap(WIN_MOVE_INFO_LABELS);
-    PutWindowTilemap(WIN_MOVE_INFO);
-    ScheduleBgCopyTilemapToVram(0);
-    ScheduleBgCopyTilemapToVram(1);
-    if (!IS_HM(itemId))
-    {
-        if (CalculatePlayerPartyCount() == 0)
-        {
-            PrintError_ThereIsNoPokemon(taskId);
-        }
-        else
-        {
-            sTMCaseDynamicResources->nextScreenCallback = CB2_ChooseMonToGiveItem;
-            Task_BeginFadeOutFromTMCase(taskId);
-        }
-    }
-    else
-    {
-        PrintError_ItemCantBeHeld(taskId);
-    }
-}
-
 static void PrintError_ThereIsNoPokemon(u8 taskId)
 {
     PrintMessageWithFollowupTask(taskId, FONT_NORMAL, gText_ThereIsNoPokemon, Task_WaitButtonAfterErrorPrint);
@@ -1122,38 +1077,6 @@ static void Action_Exit(u8 taskId)
     ReturnToList(taskId);
 }
 
-static void Task_SelectedTMHM_GiveParty(u8 taskId)
-{
-    s16 * data = gTasks[taskId].data;
-
-    if (!IS_HM(BagGetItemIdByPocketPosition(POCKET_TM_CASE, tSelection)))
-    {
-        sTMCaseDynamicResources->nextScreenCallback = CB2_GiveHoldItem;
-        Task_BeginFadeOutFromTMCase(taskId);
-    }
-    else
-    {
-        // Can't hold "important" items (e.g. key items)
-        PrintError_ItemCantBeHeld(taskId);
-    }
-}
-
-static void Task_SelectedTMHM_GivePC(u8 taskId)
-{
-    s16 * data = gTasks[taskId].data;
-
-    if (!IS_HM(BagGetItemIdByPocketPosition(POCKET_TM_CASE, tSelection)))
-    {
-        sTMCaseDynamicResources->nextScreenCallback = CB2_ReturnToPokeStorage;
-        Task_BeginFadeOutFromTMCase(taskId);
-    }
-    else
-    {
-        // Can't hold "important" items (e.g. key items)
-        PrintError_ItemCantBeHeld(taskId);
-    }
-}
-
 static void Task_SelectedTMHM_Sell(u8 taskId)
 {
     s16 * data = gTasks[taskId].data;
@@ -1167,20 +1090,9 @@ static void Task_SelectedTMHM_Sell(u8 taskId)
     }
     else
     {
-        tQuantitySelected = 1;
-        if (tQuantityOwned == 1)
-        {
-            PrintPlayersMoney();
-            Task_AskConfirmSaleWithAmount(taskId);
-        }
-        else
-        {
-            if (tQuantityOwned > 99)
-                tQuantityOwned = 99;
-            CopyItemName(gSpecialVar_ItemId, gStringVar1);
-            StringExpandPlaceholders(gStringVar4, gText_HowManyWouldYouLikeToSell);
-            PrintMessageWithFollowupTask(taskId, GetDialogBoxFontId(), gStringVar4, Task_InitQuantitySelectUI);
-        }
+        CopyItemName(gSpecialVar_ItemId, gStringVar1);
+        StringExpandPlaceholders(gStringVar4, gText_OhNoICantBuyThat);
+        PrintMessageWithFollowupTask(taskId, GetDialogBoxFontId(), gStringVar4, CloseMessageAndReturnToList);
     }
 }
 

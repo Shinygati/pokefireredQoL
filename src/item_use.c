@@ -128,6 +128,30 @@ static const u8 sUnused[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+void ItemUseOutOfBattle_ExpShare(u8 taskId)
+{
+    if (!gSaveBlock2Ptr->expShare)
+    {
+        PlaySE(SE_EXP_MAX);
+
+        if (gTasks[taskId].data[3] == 1)
+            DisplayItemMessageOnField(taskId, 1, gText_ExpShareOn, Task_ItemUse_CloseMessageBoxAndReturnToField);
+        else
+            DisplayItemMessageInBag(taskId, FONT_NORMAL, gText_ExpShareOn, Task_ReturnToBagFromContextMenu);
+    }
+    else
+    {
+        PlaySE(SE_PC_OFF);
+
+        if (gTasks[taskId].data[3] == 1)
+            DisplayItemMessageOnField(taskId, 1, gText_ExpShareOff, Task_ItemUse_CloseMessageBoxAndReturnToField);
+        else
+            DisplayItemMessageInBag(taskId, FONT_NORMAL, gText_ExpShareOff, Task_ReturnToBagFromContextMenu);
+    }
+
+    gSaveBlock2Ptr->expShare = !gSaveBlock2Ptr->expShare;
+}
+
 static void (*const sExitCallbackByItemType[])(void) = {
     [ITEM_TYPE_PARTY_MENU - 1] = CB2_ShowPartyMenuForItemUse,
     [ITEM_TYPE_FIELD      - 1] = CB2_ReturnToField,
@@ -565,6 +589,7 @@ static void Task_UseRepel(u8 taskId)
     {
         ItemUse_SetQuestLogEvent(QL_EVENT_USED_ITEM, NULL, gSpecialVar_ItemId, 0xFFFF);
         VarSet(VAR_REPEL_STEP_COUNT, ItemId_GetHoldEffectParam(gSpecialVar_ItemId));
+		VarSet(VAR_REPEL_LAST_USED, gSpecialVar_ItemId);
         RemoveUsedItem();
         DisplayItemMessageInBag(taskId, FONT_NORMAL, gStringVar4, Task_ReturnToBagFromContextMenu);
     }

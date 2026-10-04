@@ -956,11 +956,15 @@ bool32 Overworld_IsBikingAllowed(void)
 static void SetDefaultFlashLevel(void)
 {
     if (!gMapHeader.cave)
+    {
         gSaveBlock1Ptr->flashLevel = 0;
-    else if (FlagGet(FLAG_SYS_FLASH_ACTIVE))
-        gSaveBlock1Ptr->flashLevel = 0;
+        FlagClear(FLAG_SYS_FLASH_ACTIVE);
+    }
     else
-        gSaveBlock1Ptr->flashLevel = gMaxFlashLevel;
+    {
+        FlagSet(FLAG_SYS_FLASH_ACTIVE);
+        gSaveBlock1Ptr->flashLevel = 0;
+    }
 }
 
 void SetFlashLevel(s32 flashLevel)

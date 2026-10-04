@@ -226,6 +226,7 @@ const u8 gText_ThankYouIllSendItHome[] = _("どうも ありがとう!\nじた�
 const u8 gText_ThanksIllSendItHome[] = _("どうも ありがとう!\nじたくの パソコンに おくって おくね!");
 const u8 gText_YouDontHaveMoney[] = _("You don't have enough money.{PAUSE_UNTIL_PRESS}");
 const u8 gText_NoMoreRoomForThis[] = _("You have no more room for this\nitem.{PAUSE_UNTIL_PRESS}");
+const u8 gText_YouAlreadyHaveThis[] = _("You already have this item.{PAUSE_UNTIL_PRESS}");
 const u8 gText_SpaceForVar1Full[] = _("{STR_VAR_1}を\nいれる ばしょが いっぱいです{PAUSE_UNTIL_PRESS}");
 const u8 gText_AnythingElseICanHelp[] = _("Is there anything else I can do?");
 const u8 gText_CanIHelpWithAnythingElse[] = _("その ほかに\nなにか ちからに なれることは?");
@@ -462,6 +463,11 @@ const u8 gText_KeyItems[] = _("KEY ITEMS");
 const u8 gText_PokeBalls[] = _("POKé BALLS");
 const u8 gText_TMsAndHMs[] = _("TMs & HMs");
 const u8 gText_Berries[] = _("BERRIES");
+
+// Exp. Share
+const u8 gText_ExpShareOn[] = _("Turned on the Exp. Share.\pParty will now gain a portion\nof the Experience Points.{PAUSE_UNTIL_PRESS}");
+const u8 gText_ExpShareOff[] = _("Turned off the Exp. Share.\pParty will no longer gain a portion\nof any Experience Points.{PAUSE_UNTIL_PRESS}");
+
 const u8 gText_Boulderbadge[] = _("BOULDERBADGE");
 const u8 gText_Cascadebadge[] = _("CASCADEBADGE");
 const u8 gText_Thunderbadge[] = _("THUNDERBADGE");
@@ -1324,3 +1330,5 @@ const u8 gText_Receive[] = _("RECEIVE");
 const u8 gText_Send[] = _("SEND");
 const u8 gText_Toss[] = _("TOSS");
 const u8 gText_DelAllCancelOk[] = _("DEL. ALL{CLEAR_TO 0x57}CANCEL{CLEAR_TO 0xA4}OK");
+const u8 gText_PlayerUsedRepel[] = _("{PLAYER} used the\n{STR_VAR_2}.");
+const u8 gText_StatEditor[] = _("EDIT EVS");

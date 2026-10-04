@@ -296,7 +296,15 @@ static void HandleInputChooseAction(void)
                 if (itemId <= ITEM_PREMIER_BALL)
                     AddBagItem(itemId, 1);
                 else
-                    return;
+                    {
+						if(!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)) //if wild, pressing B moves cursor to run
+						{
+							PlaySE(SE_SELECT);
+							ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
+							gActionSelectionCursor[gActiveBattler] = 3;
+							ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
+						}
+					}
             }
             PlaySE(SE_SELECT);
             BtlController_EmitTwoReturnValues(1, B_ACTION_CANCEL_PARTNER, 0);

@@ -36,6 +36,7 @@ void BattleUseFunc_PokeDoll(u8 taskId);
 void FieldUseFunc_OakStopsYou(u8 taskId);
 void ItemUseOutOfBattle_EscapeRope(u8 taskId);
 void ItemUseOutOfBattle_EnigmaBerry(u8 taskId);
+void ItemUseOutOfBattle_ExpShare(u8);
 void ItemUseInBattle_EnigmaBerry(u8 taskId);
 void ItemUseOutOfBattle_Itemfinder(u8 taskId);
 void Task_UseDigEscapeRopeOnField(u8 taskId);
